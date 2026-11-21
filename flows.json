@@ -29,13 +29,22 @@
         "type": "function",
         "z": "flow_api",
         "name": "Simpan Data Sensor",
-        "func": "// Simpan ke context global\nvar data = msg.payload;\ndata.received = new Date().toISOString();\nflow.set('lastSensor', data);\n\n// Simpan history (max 50 data)\nvar history = flow.get('history') || [];\nhistory.push(data);\nif (history.length > 50) history.shift();\nflow.set('history', history);\n\nreturn msg;",
-        "outputs": 1,
+        "func": "var data = msg.payload;\ndata.received = new Date().toISOString();\n\nvar batas = flow.get('threshold');\ndata.alert = (batas !== undefined && data.suhu > batas);\n\nflow.set('lastSensor', data);\nvar history = flow.get('history') || [];\nhistory.push(data);\nif (history.length > 50) history.shift();\nflow.set('history', history);\n\nif (data.alert) {\n    var notif = {\n        topic: 'iot/alert',\n        payload: {\n            pesan: 'Suhu ' + data.suhu + ' C melewati batas ' + batas + ' C',\n            waktu: data.received\n        }\n    };\n    return [msg, notif];\n}\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
         "x": 410,
         "y": 100,
         "wires": [
             [
                 "debug_sensor"
+            ],
+            [
+                "a43ae7c5e19a7065",
+                "39f12e83ba868ea8"
             ]
         ]
     },
@@ -306,6 +315,101 @@
                 "http_resp_kontrol"
             ]
         ]
+    },
+    {
+        "id": "f30cf4a2557121e9",
+        "type": "http in",
+        "z": "flow_api",
+        "name": "PUT /api/threshold",
+        "url": "/api/threshold",
+        "method": "put",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 270,
+        "y": 700,
+        "wires": [
+            [
+                "48eefe8e77f5813c"
+            ]
+        ]
+    },
+    {
+        "id": "48eefe8e77f5813c",
+        "type": "function",
+        "z": "flow_api",
+        "name": "Cek API Key",
+        "func": "var key = msg.req.headers['x-api-key'];\nif (key !== 'kunci-rahasia-123') {\n    msg.statusCode = 401;\n    msg.payload = { status: 'error', message: 'API key salah/kosong' };\n    msg.headers = { 'Access-Control-Allow-Origin': '*' };\n    return [null, msg];\n}\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 700,
+        "wires": [
+            [
+                "664b022077603ec2"
+            ],
+            [
+                "http_resp_suhu"
+            ]
+        ]
+    },
+    {
+        "id": "664b022077603ec2",
+        "type": "function",
+        "z": "flow_api",
+        "name": "Set Threshold",
+        "func": "var max = parseFloat((msg.payload || {}).max);\nmsg.headers = { 'Access-Control-Allow-Origin': '*' };\nif (isNaN(max)) {\n    msg.statusCode = 400;\n    msg.payload = { status: 'error', message: 'max harus angka' };\n    return msg;\n}\nflow.set('threshold', max);\nmsg.statusCode = 200;\nmsg.payload = { status: 'success', message: 'Batas suhu diset', threshold: max };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 720,
+        "y": 700,
+        "wires": [
+            [
+                "http_resp_suhu"
+            ]
+        ]
+    },
+    {
+        "id": "a43ae7c5e19a7065",
+        "type": "mqtt out",
+        "z": "flow_api",
+        "name": "Publish Alert",
+        "topic": "",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt_broker_config",
+        "x": 470,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "39f12e83ba868ea8",
+        "type": "debug",
+        "z": "flow_api",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 460,
+        "y": 640,
+        "wires": []
     },
     {
         "id": "mqtt_broker_config",

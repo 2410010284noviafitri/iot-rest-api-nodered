@@ -69,8 +69,12 @@
     <div class="controls">
       <button class="btn btn-on" onclick="kontrol('lamp','on')">💡 Nyalakan Lampu</button>
       <button class="btn btn-off" onclick="kontrol('lamp','off')">🌑 Matikan Lampu</button>
+	<input type="number" id="batas" class="input-num" value="30">
+	<button class="btn btn-set" onclick="setBatas()">Set Batas Suhu</button>
     </div>
+	<div id="alert-box">
   </div>
+	
 
   <!-- History -->
   <div class="panel">
@@ -126,6 +130,7 @@ async function fetchSensor() {
       const badge = document.getElementById('status-badge');
       badge.textContent = 'ONLINE';
       badge.className = 'status-badge status-online';
+      cekAlert(json.data);
     } else {
       const badge = document.getElementById('status-badge');
       badge.textContent = 'OFFLINE';
@@ -181,6 +186,26 @@ async function kontrol(device, action) {
   } catch (err) {
     log(`✗ Error kontrol: ${err.message}`, 'error');
   }
+}
+
+// ==============================
+// THRESHOLD & ALERT
+// ==============================
+async function setBatas() {
+  const max = Number(document.getElementById('batas').value);
+  const res = await apiFetch('/threshold', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ max })
+  });
+  const json = await res.json();
+  log(json.status === 'success' ? `✓ Batas suhu: ${max}°C` : `✗ ${json.message}`, json.status === 'success' ? 'info' : 'error');
+}
+
+function cekAlert(d) {
+  const box = document.getElementById('alert-box');
+  if (d.alert) { box.style.display = 'block'; box.textContent = `⚠️ Suhu ${d.suhu}°C melewati batas!`; }
+  else { box.style.display = 'none'; }
 }
 
 // ==============================
