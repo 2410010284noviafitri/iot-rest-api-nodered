@@ -63,7 +63,7 @@
         "y": 200,
         "wires": [
             [
-                "resp_suhu"
+                "ca4b44b55cbeb11e"
             ]
         ]
     },
@@ -106,7 +106,7 @@
         "y": 280,
         "wires": [
             [
-                "resp_history"
+                "90bb777580921823"
             ]
         ]
     },
@@ -149,7 +149,7 @@
         "y": 360,
         "wires": [
             [
-                "proc_kontrol"
+                "29808a37f496a703"
             ]
         ]
     },
@@ -237,6 +237,75 @@
         "x": 570,
         "y": 440,
         "wires": []
+    },
+    {
+        "id": "ca4b44b55cbeb11e",
+        "type": "function",
+        "z": "flow_api",
+        "name": "Cek API Key",
+        "func": "var key = msg.req.headers['x-api-key'];\nif (key !== 'kunci-rahasia-123') {\n    msg.statusCode = 401;\n    msg.payload = { status: 'error', message: 'API key salah/kosong' };\n    msg.headers = { 'Access-Control-Allow-Origin': '*' };\n    return [null, msg];\n}\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 230,
+        "y": 520,
+        "wires": [
+            [
+                "resp_suhu"
+            ],
+            [
+                "http_resp_suhu"
+            ]
+        ]
+    },
+    {
+        "id": "90bb777580921823",
+        "type": "function",
+        "z": "flow_api",
+        "name": "Cek API Key",
+        "func": "var key = msg.req.headers['x-api-key'];\nif (key !== 'kunci-rahasia-123') {\n    msg.statusCode = 401;\n    msg.payload = { status: 'error', message: 'API key salah/kosong' };\n    msg.headers = { 'Access-Control-Allow-Origin': '*' };\n    return [null, msg];\n}\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 230,
+        "y": 560,
+        "wires": [
+            [
+                "resp_history"
+            ],
+            [
+                "http_resp_history"
+            ]
+        ]
+    },
+    {
+        "id": "29808a37f496a703",
+        "type": "function",
+        "z": "flow_api",
+        "name": "Cek API Key",
+        "func": "var key = msg.req.headers['x-api-key'];\nif (key !== 'kunci-rahasia-123') {\n    msg.statusCode = 401;\n    msg.payload = { status: 'error', message: 'API key salah/kosong' };\n    msg.headers = { 'Access-Control-Allow-Origin': '*' };\n    return [null, msg];\n}\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 230,
+        "y": 600,
+        "wires": [
+            [
+                "proc_kontrol"
+            ],
+            [
+                "http_resp_kontrol"
+            ]
+        ]
     },
     {
         "id": "mqtt_broker_config",
