@@ -131,14 +131,8 @@ async function fetchSensor() {
   try {
     const res = await apiFetch('/suhu');
     const json = await res.json();
-    if (json.status === 'success' && json.data.suhu !== null) {
-      document.getElementById('suhu').textContent = json.data.suhu;
-      document.getElementById('kelembaban').textContent = json.data.kelembaban;
-      const badge = document.getElementById('status-badge');
-      badge.textContent = 'ONLINE';
-      badge.className = 'status-badge status-online';
-      cekAlert(json.data);
-      tambahGrafik(json.data);
+        if (json.status === 'success' && json.data.suhu !== null) {
+      tampilkanSensor(json.data);
     } else {
       const badge = document.getElementById('status-badge');
       badge.textContent = 'OFFLINE';
@@ -239,14 +233,30 @@ function tambahGrafik(d) {
   grafik.update();
 }
 
+function tampilkanSensor(d) {
+  document.getElementById('suhu').textContent = d.suhu;
+  document.getElementById('kelembaban').textContent = d.kelembaban;
+  const badge = document.getElementById('status-badge');
+  badge.textContent = 'ONLINE';
+  badge.className = 'status-badge status-online';
+  cekAlert(d);
+  tambahGrafik(d);
+}
+
+function connectWS() {
+  const ws = new WebSocket('ws://localhost:1880/ws/sensor');
+  ws.onopen = () => log('WebSocket terhubung');
+  ws.onmessage = (e) => { tampilkanSensor(JSON.parse(e.data)); fetchHistory(); };
+  ws.onclose = () => { log('WebSocket putus, coba lagi 3 detik', 'error'); setTimeout(connectWS, 3000); };
+}
+
 // ==============================
 // AUTO REFRESH
 // ==============================
-log('Dashboard dimulai, polling setiap 3 detik...');
+log('Dashboard dimulai (WebSocket, tanpa polling)...');
 fetchSensor();
 fetchHistory();
-setInterval(fetchSensor, 3000);
-setInterval(fetchHistory, 5000);
+connectWS();
 </script>
 </body>
 </html>
