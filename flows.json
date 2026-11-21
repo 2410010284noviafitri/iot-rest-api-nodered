@@ -29,21 +29,25 @@
         "type": "function",
         "z": "flow_api",
         "name": "Simpan Data Sensor",
-        "func": "var data = msg.payload;\ndata.received = new Date().toISOString();\n\nvar batas = flow.get('threshold');\ndata.alert = (batas !== undefined && data.suhu > batas);\n\nflow.set('lastSensor', data);\nvar history = flow.get('history') || [];\nhistory.push(data);\nif (history.length > 50) history.shift();\nflow.set('history', history);\n\nif (data.alert) {\n    var notif = {\n        topic: 'iot/alert',\n        payload: {\n            pesan: 'Suhu ' + data.suhu + ' C melewati batas ' + batas + ' C',\n            waktu: data.received\n        }\n    };\n    return [msg, notif];\n}\nreturn [msg, null];",
-        "outputs": 2,
+        "func": "var data = msg.payload;\ndata.received = new Date().toISOString();\nvar batas = flow.get('threshold');\ndata.alert = (batas !== undefined && data.suhu > batas);\nflow.set('lastSensor', data);\n\nvar dbMsg = {\n    topic: \"INSERT INTO sensor (suhu, kelembaban, waktu) VALUES (\" +\n        Number(data.suhu) + \", \" + Number(data.kelembaban) + \", '\" + data.received + \"')\"\n};\n\nvar notif = null;\nif (data.alert) {\n    notif = {\n        topic: 'iot/alert', payload: {\n            pesan: 'Suhu ' + data.suhu + ' C melewati batas ' + batas + ' C',\n            waktu: data.received\n        }\n    };\n}\nreturn [msg, notif, dbMsg];",
+        "outputs": 3,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 410,
-        "y": 100,
+        "x": 420,
+        "y": 120,
         "wires": [
             [
-                "debug_sensor"
+                "debug_sensor",
+                "d07a2964d287174b"
             ],
             [
-                "a43ae7c5e19a7065",
+                "a43ae7c5e19a7065"
+            ],
+            [
+                "fbc22b44ec0fb046",
                 "39f12e83ba868ea8"
             ]
         ]
@@ -55,8 +59,8 @@
         "name": "Log Sensor",
         "active": true,
         "complete": "payload",
-        "x": 620,
-        "y": 100,
+        "x": 670,
+        "y": 120,
         "wires": []
     },
     {
@@ -111,8 +115,8 @@
         "method": "get",
         "upload": false,
         "swaggerDoc": "",
-        "x": 180,
-        "y": 280,
+        "x": 240,
+        "y": 1000,
         "wires": [
             [
                 "90bb777580921823"
@@ -124,10 +128,15 @@
         "type": "function",
         "z": "flow_api",
         "name": "Build Response History",
-        "func": "var history = flow.get('history') || [];\nmsg.payload = {\n    status: 'success',\n    count: history.length,\n    data: history\n};\nmsg.headers = {'Access-Control-Allow-Origin': '*'};\nreturn msg;",
+        "func": "msg.payload = {\n    status: 'success',\n    count: msg.payload.length,\n    data: msg.payload.map(r => ({ suhu: r.suhu, kelembaban: r.kelembaban, received: r.waktu }))\n};\nmsg.headers = { 'Access-Control-Allow-Origin': '*' };\nreturn msg;",
         "outputs": 1,
-        "x": 410,
-        "y": 280,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 1000,
         "wires": [
             [
                 "http_resp_history"
@@ -141,8 +150,8 @@
         "name": "",
         "statusCode": "",
         "headers": {},
-        "x": 640,
-        "y": 280,
+        "x": 1210,
+        "y": 1000,
         "wires": []
     },
     {
@@ -282,11 +291,11 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 230,
-        "y": 560,
+        "x": 450,
+        "y": 1000,
         "wires": [
             [
-                "resp_history"
+                "6703ec344f7dad55"
             ],
             [
                 "http_resp_history"
@@ -391,8 +400,8 @@
         "correl": "",
         "expiry": "",
         "broker": "mqtt_broker_config",
-        "x": 470,
-        "y": 580,
+        "x": 730,
+        "y": 260,
         "wires": []
     },
     {
@@ -404,12 +413,97 @@
         "tosidebar": true,
         "console": false,
         "tostatus": false,
-        "complete": "false",
+        "complete": "true",
+        "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
         "x": 460,
         "y": 640,
         "wires": []
+    },
+    {
+        "id": "d07a2964d287174b",
+        "type": "websocket out",
+        "z": "flow_api",
+        "name": "",
+        "server": "8fe1cdbd3d4ee624",
+        "client": "",
+        "x": 500,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "12894cafaa9c949a",
+        "type": "inject",
+        "z": "flow_api",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 250,
+        "y": 760,
+        "wires": [
+            [
+                "0837995450d77d09"
+            ]
+        ]
+    },
+    {
+        "id": "0837995450d77d09",
+        "type": "sqlite",
+        "z": "flow_api",
+        "mydb": "d44972b5b9f45c5c",
+        "sqlquery": "fixed",
+        "sql": "CREATE TABLE IF NOT EXISTS sensor (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  suhu REAL, kelembaban REAL, waktu TEXT\n);",
+        "name": "Create Table",
+        "x": 470,
+        "y": 760,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fbc22b44ec0fb046",
+        "type": "sqlite",
+        "z": "flow_api",
+        "mydb": "d44972b5b9f45c5c",
+        "sqlquery": "msg.topic",
+        "sql": "INSERT INTO sensor (suhu, kelembaban, waktu) VALUES ($suhu, $kelembaban, $waktu);",
+        "name": "Insert Sensor",
+        "x": 270,
+        "y": 820,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6703ec344f7dad55",
+        "type": "sqlite",
+        "z": "flow_api",
+        "mydb": "d44972b5b9f45c5c",
+        "sqlquery": "fixed",
+        "sql": "SELECT * FROM (SELECT * FROM sensor ORDER BY id DESC LIMIT 50) ORDER BY id ASC;",
+        "name": "Select History",
+        "x": 700,
+        "y": 1000,
+        "wires": [
+            [
+                "resp_history"
+            ]
+        ]
     },
     {
         "id": "mqtt_broker_config",
@@ -423,5 +517,25 @@
         "protocolVersion": "4",
         "keepalive": "60",
         "cleansession": true
+    },
+    {
+        "id": "8fe1cdbd3d4ee624",
+        "type": "websocket-listener",
+        "path": "/ws/sensor",
+        "wholemsg": "false"
+    },
+    {
+        "id": "d44972b5b9f45c5c",
+        "type": "sqlitedb",
+        "db": "C:/node-red-data/iot.db",
+        "mode": "RWC"
+    },
+    {
+        "id": "d97df7e52f7291c5",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-sqlite": "2.0.1"
+        }
     }
 ]
